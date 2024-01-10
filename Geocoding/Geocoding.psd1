@@ -25,7 +25,7 @@
     Description       = 'PowerShell module to search and reverse geocode location data.'
 
     # Minimum version of the PowerShell engine required by this module
-    PowerShellVersion = '7.0'
+    PowerShellVersion = ''
 
     # Name of the PowerShell host required by this module
     # PowerShellHostName = ''
