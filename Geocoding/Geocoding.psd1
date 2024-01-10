@@ -4,7 +4,7 @@
     RootModule        = 'Geocoding.psm1'
 
     # Version number of this module.
-    ModuleVersion     = '0.0.2'
+    ModuleVersion     = '0.0.3'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -22,7 +22,7 @@
     Copyright         = '(c) AutoSysOps (Leo Visser). All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description       = 'PowerShell module to search and reverse geocode location data.'
+    Description       = 'PowerShell module to search and reverse geocode location data using Open Street Maps, Bing Maps and Google Maps.'
 
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion = ''
@@ -98,10 +98,10 @@
             # Tags = @()
 
             # A URL to the license for this module.
-            # LicenseUri = ''
+            LicenseUri = 'https://github.com/autosysops/PowerShell_Geocoding/blob/main/LICENSE'
 
             # A URL to the main website for this project.
-            # ProjectUri = ''
+            ProjectUri = 'https://github.com/autosysops/PowerShell_Geocoding'
 
             # A URL to an icon representing this module.
             # IconUri = ''
