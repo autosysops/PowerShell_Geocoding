@@ -4,7 +4,7 @@
     RootModule        = 'Geocoding.psm1'
 
     # Version number of this module.
-    ModuleVersion     = '0.0.1'
+    ModuleVersion     = '0.0.2'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -117,11 +117,7 @@
 
             # External dependent modules of this module
             ExternalModuleDependencies = @(
-                @{
-                    ModuleName     = 'TelemetryHelper'
-                    ModuleVersion  = '2.1.2'
-                    MaximumVersion = '2.99.99'
-                }
+                'TelemetryHelper'
             )
 
         } # End of PSData hashtable
