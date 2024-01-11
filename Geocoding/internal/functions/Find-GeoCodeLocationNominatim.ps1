@@ -31,7 +31,7 @@
     #>
 
     [CmdLetBinding()]
-    [OutputType([Array])]
+    [OutputType([System.Object[]])]
 
     Param (
         [Parameter(Mandatory = $true, Position = 1, ParameterSetName = 'Query')]

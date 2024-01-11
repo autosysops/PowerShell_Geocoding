@@ -4,7 +4,7 @@
     RootModule        = 'Geocoding.psm1'
 
     # Version number of this module.
-    ModuleVersion     = '0.0.3'
+    ModuleVersion     = '0.0.4'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -43,13 +43,7 @@
     # ProcessorArchitecture = ''
 
     # Modules that must be imported into the global environment prior to importing this module
-    RequiredModules   = @(
-        @{
-            ModuleName     = 'TelemetryHelper'
-            ModuleVersion  = '2.1.2'
-            MaximumVersion = '2.99.99'
-        }
-    )
+    RequiredModules   = @('TelemetryHelper')
 
     # Assemblies that must be loaded prior to importing this module
     # RequiredAssemblies = @()
@@ -95,7 +89,7 @@
         PSData = @{
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            # Tags = @()
+            Tags = @('Maps', 'Google', 'Bing', 'Microsoft', 'OSM', 'Open Street Maps', 'Google Maps', 'Bing Maps', 'Geocode', 'Location', 'PSEdition_Desktop', 'PSEdition_Core', 'Windows', 'MacOS', 'Linux')
 
             # A URL to the license for this module.
             LicenseUri = 'https://github.com/autosysops/PowerShell_Geocoding/blob/main/LICENSE'
@@ -116,9 +110,7 @@
             # RequireLicenseAcceptance = $false
 
             # External dependent modules of this module
-            ExternalModuleDependencies = @(
-                'TelemetryHelper'
-            )
+            # ExternalModuleDependencies = @()
 
         } # End of PSData hashtable
 
