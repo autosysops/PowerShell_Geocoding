@@ -89,7 +89,7 @@
         PSData = @{
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = @('Maps', 'Google', 'Bing', 'Microsoft', 'OSM', 'Open Street Maps', 'Google Maps', 'Bing Maps', 'Geocode', 'Location', 'PSEdition_Desktop', 'PSEdition_Core', 'Windows', 'MacOS', 'Linux')
+            Tags = @('Maps', 'Google', 'Bing', 'Microsoft', 'OSM', 'OpenStreetMaps', 'GoogleMaps', 'BingMaps', 'Geocode', 'Location', 'PSEdition_Desktop', 'PSEdition_Core', 'Windows', 'MacOS', 'Linux')
 
             # A URL to the license for this module.
             LicenseUri = 'https://github.com/autosysops/PowerShell_Geocoding/blob/main/LICENSE'
