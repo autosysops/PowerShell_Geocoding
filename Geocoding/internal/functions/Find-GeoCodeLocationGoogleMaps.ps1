@@ -30,7 +30,7 @@
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification='The product is called like this.')]
 
     [CmdLetBinding()]
-    [OutputType([Array])]
+    [OutputType([System.Object[]])]
 
     Param (
         [Parameter(Mandatory = $true, Position = 1, ParameterSetName = 'Query')]
