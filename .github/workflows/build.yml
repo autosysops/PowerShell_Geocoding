@@ -3,6 +3,8 @@
     branches:
       - master
       - main
+    paths:
+      - Geocoding
 
 jobs:
   build:
