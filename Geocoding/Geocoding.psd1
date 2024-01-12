@@ -22,7 +22,7 @@
     Copyright         = '(c) AutoSysOps (Leo Visser). All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description       = 'PowerShell module to search and reverse geocode location dataa. The module supports Open Street Maps, Bing Maps and Google Maps. You can use Open Street Maps without an API key, to use either Google or Bing you do need to request an API key.'
+    Description       = 'PowerShell module to search and reverse geocode location data. The module supports Open Street Maps, Bing Maps and Google Maps. You can use Open Street Maps without an API key, to use either Google or Bing you do need to request an API key.'
 
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion = ''
