@@ -31,11 +31,11 @@
             "Longitude" = $Resource.geometry.coordinates[0]
         }
         "Address"     = [PSCustomObject]@{
-            "Street Address" = $Resource.properties.address.addressLine ?? ""
-            "Locality"       = $Resource.properties.address.locality ?? ""
-            "Region"         = $Resource.properties.address.adminDistricts[0].shortName ?? ""
-            "Postal Code"    = $Resource.properties.address.postalCode ?? ""
-            "Country"        = $Resource.properties.address.countryRegion.name ?? ""
+            "Street Address" = if($Resource.properties.address.addressLine){$Resource.properties.address.addressLine}else{$null}
+            "Locality"       = if($Resource.properties.address.locality){$Resource.properties.address.locality}else{$null}
+            "Region"         = if($Resource.properties.address.adminDistricts[0].shortName){$Resource.properties.address.adminDistricts[0].shortName}else{$null}
+            "Postal Code"    = if($Resource.properties.address.postalCode){$Resource.properties.address.postalCode}else{$null}
+            "Country"        = if($Resource.properties.address.countryRegion.name){$Resource.properties.address.countryRegion.name}else{$null}
         }
         "Boundingbox" = [PSCustomObject]@{
             "South Latitude" = $Resource.bbox[1]
