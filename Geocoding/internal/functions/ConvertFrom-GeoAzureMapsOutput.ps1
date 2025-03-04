@@ -33,7 +33,7 @@
         "Address"     = [PSCustomObject]@{
             "Street Address" = if($Resource.properties.address.addressLine){$Resource.properties.address.addressLine}else{$null}
             "Locality"       = if($Resource.properties.address.locality){$Resource.properties.address.locality}else{$null}
-            "Region"         = if($Resource.properties.address.adminDistricts[0].shortName){$Resource.properties.address.adminDistricts[0].shortName}else{$null}
+            "Region"         = if($Resource.properties.address.adminDistricts){$Resource.properties.address.adminDistricts[0].shortName}else{$null}
             "Postal Code"    = if($Resource.properties.address.postalCode){$Resource.properties.address.postalCode}else{$null}
             "Country"        = if($Resource.properties.address.countryRegion.name){$Resource.properties.address.countryRegion.name}else{$null}
         }
