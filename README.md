@@ -37,6 +37,7 @@ By default the module will use Open Street Maps as this doesn't require a API ke
 |Open Street Maps|No|No|
 |Google Maps|[Yes](https://developers.google.com/maps/documentation/geocoding/get-api-key)|Yes|
 |Bing Maps|[Yes](https://learn.microsoft.com/en-us/bingmaps/getting-started/bing-maps-dev-center-help/getting-a-bing-maps-key)|No|
+|Azure Maps|[Yes](https://learn.microsoft.com/en-us/azure/azure-maps/azure-maps-authentication#shared-key-authentication)|No|
 
 Check out the Get-Help for more information on how to use the function.
 
