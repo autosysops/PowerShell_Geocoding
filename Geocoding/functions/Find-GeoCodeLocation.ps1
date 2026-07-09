@@ -4,7 +4,7 @@
         Find a geographical location based on a query or coordinates.
 
     .DESCRIPTION
-        Find a geographical location based on a query or coordinates. It supports multiple providers being: Open Street Maps, Bing Maps and Google Maps.
+        Find a geographical location based on a query or coordinates. It supports multiple providers being: Open Street Maps, Azure Maps and Google Maps.
 
     .PARAMETER Query
         A textual query for the location, this is what you would normally enter in the search bar for the map service. Can't be used together with Lat/Long.
@@ -16,12 +16,12 @@
         The longitude as a float. Can't be used together with Query.
 
     .PARAMETER Provider
-        The service to use to find the location. It supports Open Street Maps (OSM), Bing Maps (Bing), Azure Maps (Azure) and Google Maps (Google).
-        To use Azure, Bing and Google an API key is required which needs to be requested via their service. Open Street Maps can be used without an API key.
+        The service to use to find the location. It supports Open Street Maps (OSM), Azure Maps (Azure) and Google Maps (Google).
+        To use Azure and Google an API key is required which needs to be requested via their service. Open Street Maps can be used without an API key.
         Default it will use Open Street Maps
 
     .PARAMETER Apikey
-        Required when using Azure, Google or Bing. Needs to be entered as a string.
+        Required when using Azure or Google. Needs to be entered as a string.
 
     .PARAMETER Limit
         Limits the amount of results being returned.
@@ -37,15 +37,6 @@
         Coordinates : @{Latitude=47.64249155; Longitude=-122.13692695171639}
         Address     : @{Street Address=Northeast 36th Street 15010; Locality=; Region=Washington; Postal Code=98052; Country=United States}
         Boundingbox : @{South Latitude=47.6413399; West Longitude=-122.1378316; North Latitude=47.6433901; East Longitude=-122.1365074}
-
-    .EXAMPLE
-        Use Bing Maps to query and return a single result
-
-        PS> Find-GeoCodeLocation -Query "Microsoft Building 92, NE 36th St, Redmond, WA 98052, United States" -Provider Bing -Apikey <YOUR API KEY> -Limit 1 | fl *
-
-        Coordinates : @{Latitude=47,642428; Longitude=-122,05937604}
-        Address     : @{Street Address=NE 36th St; Locality=Redmond; Region=WA; Postal Code=98074; Country=United States}
-        Boundingbox : @{South Latitude=47,6385652824306; West Longitude=-122,06701963172; North Latitude=47,646290717572; East Longitude=-122,051732453158}
 
     .EXAMPLE
         Use Google Maps to query and return a single result
@@ -76,15 +67,6 @@
         Boundingbox : @{South Latitude=38.7196074; West Longitude=-78.1576132; North Latitude=38.7593864; East Longitude=-78.1236110}
 
     .EXAMPLE
-        Use Bing Maps to lookup coordinates and return a single result
-
-        PS> Find-GeoCodeLocation -Latitude 38.75408328 -Longitude -78.13476563 -Provider Bing -Apikey <YOUR API KEY> -Limit 1 | fl *
-
-        Coordinates : @{Latitude=38,75408173; Longitude=-78,13477325}
-        Address     : @{Street Address=; Locality=Hampton; Region=VA; Postal Code=22747; Country=United States}
-        Boundingbox : @{South Latitude=38,7502190085035; West Longitude=-78,1413771887125; North Latitude=38,7579444436449; East Longitude=-78,1281693200765 }
-
-    .EXAMPLE
         Use Google Maps to lookup coordinates and return a single result
 
         PS> Find-GeoCodeLocation -Latitude 38.75408328 -Longitude -78.13476563 -Provider Google -Apikey <YOUR API KEY> -Limit 1 | fl *
@@ -105,7 +87,6 @@
 
     .NOTES
         Open Street Maps: https://nominatim.org/release-docs/latest/api/Overview/
-        Bing Maps: https://learn.microsoft.com/en-us/bingmaps/rest-services/locations/
         Google Maps: https://developers.google.com/maps/documentation/geocoding
         Azure Maps: https://learn.microsoft.com/en-us/azure/azure-maps/about-azure-maps
     #>
@@ -125,7 +106,7 @@
         [Parameter(Mandatory = $true, Position = 2, ParameterSetName = 'Lon/Lat')]
         [Single] $Longitude,
 
-        [ValidateSet('OpenStreetMaps', 'OSM', 'BingMaps', 'Bing', 'GoogleMaps', 'Google', "Azure", "AzureMaps")]
+        [ValidateSet('OpenStreetMaps', 'OSM', 'GoogleMaps', 'Google', "Azure", "AzureMaps")]
         [Parameter(Mandatory = $false, Position = 2, ParameterSetName = 'Query')]
         [Parameter(Mandatory = $false, Position = 3, ParameterSetName = 'Lon/Lat')]
         [String] $Provider = "OpenStreetMaps",
@@ -140,7 +121,7 @@
     )
 
     DynamicParam {
-        if($Provider -in 'BingMaps', 'Bing', 'GoogleMaps', 'Google', "Azure", "AzureMaps") {
+        if($Provider -in 'GoogleMaps', 'Google', "Azure", "AzureMaps") {
             $attribute = New-Object System.Management.Automation.ParameterAttribute
             $attribute.Mandatory = $true
 
@@ -191,25 +172,6 @@
 
                 # Format the results in a uniform format
                 $res = @($res | ForEach-Object {ConvertFrom-GeoAzureMapsOutput -Resource $_})
-
-                # Return result
-                return $res
-            }
-
-            { $_ -in "BingMaps", "Bing" } {
-                Write-Debug "[BingMaps] start processing"
-                Send-THEvent -ModuleName "Geocoding" -EventName "Find-GeoCodeLocation" -PropertiesHash @{Provider = "Bing" }
-
-                # Create the parameters
-                $splat = $PSBoundParameters
-                $null = $splat.Remove("Provider")
-                $null = $splat.Remove("Language")
-
-                # Query the provider for the results
-                $res = (Find-GeoCodeLocationBingMaps @splat).resourceSets.resources
-
-                # Format the results in a uniform format
-                $res = @($res | ForEach-Object {ConvertFrom-GeoBingMapsOutput -Resource $_})
 
                 # Return result
                 return $res

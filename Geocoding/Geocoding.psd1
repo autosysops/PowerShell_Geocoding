@@ -4,7 +4,7 @@
     RootModule        = 'Geocoding.psm1'
 
     # Version number of this module.
-    ModuleVersion     = '0.1.0'
+    ModuleVersion     = '1.0.0'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -22,7 +22,7 @@
     Copyright         = '(c) AutoSysOps (Leo Visser). All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description       = 'PowerShell module to search and reverse geocode location data. The module supports Open Street Maps, Azure Maps, Bing Maps and Google Maps. You can use Open Street Maps without an API key, to use either Azure, Google or Bing you do need to request an API key.'
+    Description       = 'PowerShell module to search and reverse geocode location data and calculate route distances. The module supports Open Street Maps, Azure Maps and Google Maps. You can use Open Street Maps without an API key, to use either Azure or Google you do need to request an API key.'
 
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion = ''
@@ -62,7 +62,8 @@
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
     FunctionsToExport = @(
-        "Find-GeoCodeLocation"
+        "Find-GeoCodeLocation",
+        "Find-GeoCodeDistance"
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -89,7 +90,7 @@
         PSData = @{
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = @('Maps', 'Azure', 'AzureMaps', 'Google', 'Bing', 'Microsoft', 'OSM', 'OpenStreetMaps', 'GoogleMaps', 'BingMaps', 'Geocode', 'Location', 'PSEdition_Desktop', 'PSEdition_Core', 'Windows', 'MacOS', 'Linux')
+            Tags = @('Maps', 'Azure', 'AzureMaps', 'Google', 'Microsoft', 'OSM', 'OpenStreetMaps', 'GoogleMaps', 'Geocode', 'Location', 'Distance', 'Route', 'PSEdition_Desktop', 'PSEdition_Core', 'Windows', 'MacOS', 'Linux')
 
             # A URL to the license for this module.
             LicenseUri = 'https://github.com/autosysops/PowerShell_Geocoding/blob/main/LICENSE'
