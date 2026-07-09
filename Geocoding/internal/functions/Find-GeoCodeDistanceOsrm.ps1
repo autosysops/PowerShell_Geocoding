@@ -65,5 +65,5 @@
     $uri = "$($Server.TrimEnd('/'))/route/v1/$routeProfile/$($coordinates)?overview=false"
 
     Write-Debug "[OSRM] Call uri: $uri"
-    return Invoke-RestMethod -Uri $uri -Method GET -RetryIntervalSec 1 -MaximumRetryCount 3
+    return Invoke-RestMethod -Uri $uri -Method GET
 }

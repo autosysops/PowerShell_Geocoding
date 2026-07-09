@@ -98,5 +98,5 @@
     }
 
     Write-Debug "[GoogleMaps] Call uri: $uri"
-    return Invoke-RestMethod -Uri $uri -Method GET -RetryIntervalSec 1 -MaximumRetryCount 5
+    return Invoke-RestMethod -Uri $uri -Method GET
 }
