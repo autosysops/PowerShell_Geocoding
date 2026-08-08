@@ -14,5 +14,5 @@ jobs:
       run: .\build\vsts-validate.ps1
       shell: powershell
       env:
-        AZURE_MAPS_KEY: ${{ vars.AZURE_MAPS_KEY }}
-        GOOGLE_MAPS_KEY: ${{ vars.GOOGLE_MAPS_KEY }}
+        AZURE_MAPS_KEY: ${{ secrets.AZURE_MAPS_KEY }}
+        GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}

@@ -17,8 +17,11 @@ jobs:
     - name: Validate
       run: .\build\vsts-validate.ps1
       shell: powershell
+      env:
+        AZURE_MAPS_KEY: ${{ secrets.AZURE_MAPS_KEY }}
+        GOOGLE_MAPS_KEY: ${{ secrets.GOOGLE_MAPS_KEY }}
     - name: Build
       run: .\build\vsts-build.ps1 -ApiKey $env:APIKEY
       shell: powershell
       env:
-        APIKEY: ${{ secrets.ApiKey }}
+        APIKEY: ${{ secrets.APIKEY }}
