@@ -113,6 +113,58 @@ Describe "Find-GeoCodeDistance - Microsoft Schiphol to Microsoft Hamburg" {
             { Find-GeoCodeDistance -OriginLatitude 52.30 -OriginLongitude 4.75 -DestinationLatitude 53.56 -DestinationLongitude 9.92 -Provider OSM -ArrivalTime (Get-Date).AddHours(2) } |
                 Should -Throw "*DepartureTime and ArrivalTime are not supported by Open Street Maps*" -Because "OSRM is a static routing service"
         }
+
+        It "Does not allow Provider with StraightLineDistance" {
+            {
+                Find-GeoCodeDistance -OriginLatitude 52.30 -OriginLongitude 4.75 -DestinationLatitude 53.56 -DestinationLongitude 9.92 -StraightLineDistance -Provider OSM
+            } | Should -Throw -Because "StraightLineDistance uses its own parameter set"
+        }
+
+        It "Does not allow TravelMode with StraightLineDistance" {
+            {
+                Find-GeoCodeDistance -OriginLatitude 52.30 -OriginLongitude 4.75 -DestinationLatitude 53.56 -DestinationLongitude 9.92 -StraightLineDistance -TravelMode Walking
+            } | Should -Throw -Because "StraightLineDistance excludes route travel modes"
+        }
+
+        It "Does not allow DepartureTime with StraightLineDistance" {
+            {
+                Find-GeoCodeDistance -OriginLatitude 52.30 -OriginLongitude 4.75 -DestinationLatitude 53.56 -DestinationLongitude 9.92 -StraightLineDistance -DepartureTime (Get-Date)
+            } | Should -Throw -Because "StraightLineDistance excludes route timing parameters"
+        }
+
+        It "Does not allow ArrivalTime with StraightLineDistance" {
+            {
+                Find-GeoCodeDistance -OriginLatitude 52.30 -OriginLongitude 4.75 -DestinationLatitude 53.56 -DestinationLongitude 9.92 -StraightLineDistance -ArrivalTime (Get-Date).AddHours(1)
+            } | Should -Throw -Because "StraightLineDistance excludes route timing parameters"
+        }
+    }
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Straight-line distance
+    # ─────────────────────────────────────────────────────────────────────────
+    Context "StraightLineDistance" {
+
+        It "Returns a result without using a provider" {
+            $result = Find-GeoCodeDistance -OriginLatitude $script:OriginLat -OriginLongitude $script:OriginLon -DestinationLatitude $script:DestLat -DestinationLongitude $script:DestLon -StraightLineDistance
+            $result | Should -Not -BeNullOrEmpty
+        }
+
+        It "Returns straight-line Distance.Meters in a plausible range" {
+            $result = Find-GeoCodeDistance -OriginLatitude $script:OriginLat -OriginLongitude $script:OriginLon -DestinationLatitude $script:DestLat -DestinationLongitude $script:DestLon -StraightLineDistance
+            $result.Distance.Meters | Should -BeGreaterOrEqual 350000 -Because "Schiphol to Hamburg straight-line distance is around 400 km"
+            $result.Distance.Meters | Should -BeLessOrEqual    450000 -Because "Schiphol to Hamburg straight-line distance is around 400 km"
+        }
+
+        It "Returns Miles in imperial mode" {
+            $result = Find-GeoCodeDistance -OriginLatitude $script:OriginLat -OriginLongitude $script:OriginLon -DestinationLatitude $script:DestLat -DestinationLongitude $script:DestLon -StraightLineDistance -Unit Imperial
+            $result.Distance.Miles | Should -BeGreaterThan 0
+            $result.Distance.Meters | Should -BeNullOrEmpty
+        }
+
+        It "Does not return a traffic delay for straight-line distance" {
+            $result = Find-GeoCodeDistance -OriginLatitude $script:OriginLat -OriginLongitude $script:OriginLon -DestinationLatitude $script:DestLat -DestinationLongitude $script:DestLon -StraightLineDistance
+            $result.TrafficDelay | Should -BeNullOrEmpty
+        }
     }
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -287,6 +339,65 @@ Describe "Find-GeoCodeDistance - Microsoft Schiphol to Microsoft Hamburg" {
         It "Returns a positive distance" -Skip:(-not $azureKeyAvailable) {
             if ($script:AzureWalkingError) { throw "Azure walking failed: $($script:AzureWalkingError)" }
             $script:AzureWalkingResult.Distance.Meters | Should -BeGreaterThan 0 -Because "any route has a non-zero distance"
+        }
+    }
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Telemetry
+    # ─────────────────────────────────────────────────────────────────────────
+
+    Context "Telemetry" {
+
+        BeforeEach {
+            Mock Send-THEvent {} -ModuleName Geocoding
+            Mock Find-GeoCodeDistanceOsrm { [PSCustomObject]@{ routes = @() } } -ModuleName Geocoding
+            Mock ConvertFrom-GeoOsrmDistanceOutput {
+                [PSCustomObject]@{
+                    Distance     = [PSCustomObject]@{ Meters = 1000 }
+                    Duration     = [TimeSpan]::FromSeconds(120)
+                    TrafficDelay = $null
+                }
+            } -ModuleName Geocoding
+            Mock Find-GeoCodeDistanceStraightLine {
+                [PSCustomObject]@{
+                    Distance     = [PSCustomObject]@{ Meters = 1000 }
+                    Duration     = $null
+                    TrafficDelay = $null
+                }
+            } -ModuleName Geocoding
+        }
+
+        It "Sends non-PII telemetry for route-based calls" {
+            $null = Find-GeoCodeDistance -OriginLatitude 52.30 -OriginLongitude 4.75 -DestinationLatitude 53.56 -DestinationLongitude 9.92 -Provider OSM -TravelMode Walking
+
+            Should -Invoke Send-THEvent -ModuleName Geocoding -Times 1 -Exactly -ParameterFilter {
+                $EventName -eq "Find-GeoCodeDistance" -and
+                $PropertiesHash.Provider -eq "OSM" -and
+                $PropertiesHash.TravelMode -eq "Walking" -and
+                $PropertiesHash.UsesDepartureTime -eq $false -and
+                $PropertiesHash.UsesArrivalTime -eq $false -and
+                $PropertiesHash.IsStraightLineDistance -eq $false -and
+                (-not $PropertiesHash.ContainsKey("OriginLatitude")) -and
+                (-not $PropertiesHash.ContainsKey("OriginLongitude")) -and
+                (-not $PropertiesHash.ContainsKey("DestinationLatitude")) -and
+                (-not $PropertiesHash.ContainsKey("DestinationLongitude"))
+            }
+        }
+
+        It "Sends non-PII telemetry for straight-line calls" {
+            $null = Find-GeoCodeDistance -OriginLatitude 52.30 -OriginLongitude 4.75 -DestinationLatitude 53.56 -DestinationLongitude 9.92 -StraightLineDistance
+
+            Should -Invoke Send-THEvent -ModuleName Geocoding -Times 1 -Exactly -ParameterFilter {
+                $EventName -eq "Find-GeoCodeDistance" -and
+                $PropertiesHash.Provider -eq "StraightLine" -and
+                $PropertiesHash.IsStraightLineDistance -eq $true -and
+                $PropertiesHash.UsesDepartureTime -eq $false -and
+                $PropertiesHash.UsesArrivalTime -eq $false -and
+                (-not $PropertiesHash.ContainsKey("OriginLatitude")) -and
+                (-not $PropertiesHash.ContainsKey("OriginLongitude")) -and
+                (-not $PropertiesHash.ContainsKey("DestinationLatitude")) -and
+                (-not $PropertiesHash.ContainsKey("DestinationLongitude"))
+            }
         }
     }
 }

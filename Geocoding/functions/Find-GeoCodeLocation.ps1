@@ -137,11 +137,21 @@
     }
 
     Process {
+        $usesQuery = $PSBoundParameters.ContainsKey('Query')
+        $usesLimit = $PSBoundParameters.ContainsKey('Limit')
+        $usesLanguage = $PSBoundParameters.ContainsKey('Language')
+
         # do actions for the right provider
         switch ($Provider) {
             { $_ -in "OpenStreetMaps", "OSM" } {
                 Write-Debug "[OpenStreetMaps] start processing"
-                Send-THEvent -ModuleName "Geocoding" -EventName "Find-GeoCodeLocation" -PropertiesHash @{Provider = "OSM" }
+                Send-THEvent -ModuleName "Geocoding" -EventName "Find-GeoCodeLocation" -PropertiesHash @{
+                    Provider        = "OSM"
+                    IsQueryLookup   = $usesQuery
+                    IsReverseLookup = (-not $usesQuery)
+                    UsesLimit       = $usesLimit
+                    UsesLanguage    = $usesLanguage
+                }
 
                 # Create the parameters
                 $splat = $PSBoundParameters
@@ -160,7 +170,13 @@
 
             { $_ -in "AzureMaps", "Azure" } {
                 Write-Debug "[AzureMaps] start processing"
-                Send-THEvent -ModuleName "Geocoding" -EventName "Find-GeoCodeLocation" -PropertiesHash @{Provider = "Azure" }
+                Send-THEvent -ModuleName "Geocoding" -EventName "Find-GeoCodeLocation" -PropertiesHash @{
+                    Provider        = "Azure"
+                    IsQueryLookup   = $usesQuery
+                    IsReverseLookup = (-not $usesQuery)
+                    UsesLimit       = $usesLimit
+                    UsesLanguage    = $usesLanguage
+                }
 
                 # Create the parameters
                 $splat = $PSBoundParameters
@@ -179,7 +195,13 @@
 
             { $_ -in "GoogleMaps", "Google" } {
                 Write-Debug "[GoogleMaps] start processing"
-                Send-THEvent -ModuleName "Geocoding" -EventName "Find-GeoCodeLocation" -PropertiesHash @{Provider = "Google" }
+                Send-THEvent -ModuleName "Geocoding" -EventName "Find-GeoCodeLocation" -PropertiesHash @{
+                    Provider        = "Google"
+                    IsQueryLookup   = $usesQuery
+                    IsReverseLookup = (-not $usesQuery)
+                    UsesLimit       = $usesLimit
+                    UsesLanguage    = $usesLanguage
+                }
 
                 # Create the parameters
                 $splat = $PSBoundParameters

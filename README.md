@@ -99,12 +99,18 @@ Find-GeoCodeDistance -OriginLatitude 52.3037 -OriginLongitude 4.7500 `
 Find-GeoCodeDistance -OriginLatitude 52.3037 -OriginLongitude 4.7500 `
                      -DestinationLatitude 53.5614 -DestinationLongitude 9.9152 `
                      -Provider OSM -OsrmServer "http://my-osrm.example.com"
+
+# Straight-line distance (Haversine, no provider/API key needed)
+Find-GeoCodeDistance -OriginLatitude 52.3037 -OriginLongitude 4.7500 `
+                     -DestinationLatitude 53.5614 -DestinationLongitude 9.9152 `
+                     -StraightLineDistance
 ```
 
-**Output fields:** `Distance` (Meters, Kilometers), `Duration` (Seconds, Minutes), `TrafficDelay` (Seconds, Minutes — populated when traffic data is available).
+**Output fields:** `Distance` (Meters or Miles), `Duration` (TimeSpan for route-based results), `TrafficDelay` (TimeSpan when traffic data is available).
 
 > **Note on `-OsrmServer`:** this parameter only appears when `-Provider OSM` or `-Provider OpenStreetMaps` is explicitly set.
 > **Note on `-DepartureTime`/`-ArrivalTime`:** these are mutually exclusive — PowerShell's parameter sets prevent both from being specified at the same time.
+> **Note on `-StraightLineDistance`:** this uses its own parameter set and excludes `-Provider`, `-TravelMode`, `-DepartureTime` and `-ArrivalTime`.
 
 **Provider support:**
 
@@ -117,7 +123,21 @@ Find-GeoCodeDistance -OriginLatitude 52.3037 -OriginLongitude 4.7500 `
 |Departure time|–|✓|✓|
 |Arrival time|–|✓ (transit only)|✓|
 |Custom OSRM server|✓|–|–|
+|Straight-line distance|✓ (local calc)|✓ (local calc)|✓ (local calc)|
 |API key required|No|Yes|Yes|
+
+---
+
+## Telemetry Privacy
+
+Telemetry never includes location PII such as query text, coordinates, latitude/longitude, or origin/destination values.
+
+The module records feature usage metadata only, for example:
+
+- `Find-GeoCodeDistance`: provider selection, travel mode, `TrafficAware`, `DepartureTime`/`ArrivalTime` usage, and whether `StraightLineDistance` was used.
+- `Find-GeoCodeLocation`: provider selection, query vs reverse lookup mode, and whether `Limit` and `Language` were used.
+
+You can disable telemetry by setting `GEOCODING_TELEMETRY_OPTIN` to `false` (or `0`/`no`) before importing the module.
 
 ---
 

@@ -28,6 +28,11 @@
         -DepartureTime and -ArrivalTime are mutually exclusive parameter sets.
         Arrival time is only supported by Google Maps.
 
+        Use -StraightLineDistance to calculate the direct great-circle distance
+        between coordinates (Haversine) without calling an external provider.
+        In this mode, Provider, TravelMode, DepartureTime and ArrivalTime are
+        not available.
+
         Use -Unit to choose between Metric (meters, default) and Imperial (miles).
         Duration is returned as a TimeSpan, giving access to .TotalSeconds,
         .TotalMinutes, .TotalHours, .Hours, .Minutes, .Seconds and so on.
@@ -66,6 +71,11 @@
     .PARAMETER ArrivalTime
         Optional desired arrival time as a DateTime. Cannot be combined with
         -DepartureTime. Only supported by Google Maps Transit mode.
+
+    .PARAMETER StraightLineDistance
+        Calculates straight-line distance using the Haversine formula. Uses a
+        dedicated parameter set that excludes Provider, TravelMode,
+        DepartureTime and ArrivalTime.
 
     .PARAMETER Apikey
         API key for the selected provider. Only available (and required) when
@@ -110,6 +120,11 @@
         Calculate transit distance using Google Maps with a target arrival time
 
         PS> Find-GeoCodeDistance -OriginLatitude 52.3037 -OriginLongitude 4.7500 -DestinationLatitude 53.5614 -DestinationLongitude 9.9152 -Provider Google -TravelMode Transit -ArrivalTime (Get-Date).AddHours(3) -Apikey "<KEY>"
+
+    .EXAMPLE
+        Calculate straight-line distance without a map provider
+
+        PS> Find-GeoCodeDistance -OriginLatitude 52.3037 -OriginLongitude 4.7500 -DestinationLatitude 53.5614 -DestinationLongitude 9.9152 -StraightLineDistance
     #>
 
     [CmdLetBinding(DefaultParameterSetName = 'Default')]
@@ -129,13 +144,17 @@
         [Parameter(Mandatory = $true)]
         [Double] $DestinationLongitude,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = 'Default')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'WithDepartureTime')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'WithArrivalTime')]
         [ValidateSet('OpenStreetMaps', 'OSM', 'GoogleMaps', 'Google', 'AzureMaps', 'Azure')]
         [String] $Provider = 'OSM',
 
         # TravelMode is a static parameter so that help and tab-completion always
         # work. Transit is validated against the provider in Process{}.
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = 'Default')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'WithDepartureTime')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'WithArrivalTime')]
         [ValidateSet('Driving', 'Walking', 'Transit')]
         [String] $TravelMode = 'Driving',
 
@@ -149,11 +168,18 @@
         [DateTime] $DepartureTime,
 
         [Parameter(Mandatory = $false, ParameterSetName = 'WithArrivalTime')]
-        [DateTime] $ArrivalTime
+        [DateTime] $ArrivalTime,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'StraightLine')]
+        [switch] $StraightLineDistance
     )
 
     DynamicParam {
         $dictionary = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+
+        if ($PSBoundParameters.ContainsKey('StraightLineDistance')) {
+            return $dictionary
+        }
 
         # -Apikey: required for Google Maps and Azure Maps.
         if ($Provider -in 'GoogleMaps', 'Google', 'AzureMaps', 'Azure') {
@@ -189,74 +215,99 @@
     }
 
     Process {
+        $isStraightLine = [bool] $PSBoundParameters['StraightLineDistance']
+
         # Resolve dynamic-parameter values with their defaults.
         $trafficAware = [bool]$PSBoundParameters['TrafficAware']
         $osrmServer   = if ($PSBoundParameters.ContainsKey('OsrmServer')) { $PSBoundParameters['OsrmServer'] } else { 'http://router.project-osrm.org' }
 
-        # Validate logical constraints.
-        if ($TravelMode -eq 'Transit' -and $Provider -notin 'GoogleMaps', 'Google') {
-            throw "Transit mode is only supported by Google Maps."
-        }
-        if ($trafficAware -and $TravelMode -ne 'Driving') {
-            throw "TrafficAware is only supported for Driving mode."
-        }
-        if (($PSBoundParameters.ContainsKey('DepartureTime') -or $PSBoundParameters.ContainsKey('ArrivalTime')) -and $Provider -in 'OpenStreetMaps', 'OSM') {
-            throw "DepartureTime and ArrivalTime are not supported by Open Street Maps."
-        }
-        if ($PSBoundParameters.ContainsKey('ArrivalTime') -and $Provider -notin 'GoogleMaps', 'Google') {
-            throw "ArrivalTime is only supported by Google Maps."
+        $telemetryProvider = switch ($Provider) {
+            { $_ -in 'OpenStreetMaps', 'OSM' } { 'OSM' ; break }
+            { $_ -in 'GoogleMaps', 'Google' } { 'Google' ; break }
+            { $_ -in 'AzureMaps', 'Azure' } { 'Azure' ; break }
+            default { 'OSM' }
         }
 
-        # Invoke the appropriate provider and get the normalised result.
-        $result = switch ($Provider) {
-            { $_ -in 'OpenStreetMaps', 'OSM' } {
-                Write-Debug "[OpenStreetMaps] start distance processing"
-                Send-THEvent -ModuleName "Geocoding" -EventName "Find-GeoCodeDistance" -PropertiesHash @{ Provider = "OSM" }
+        if ($isStraightLine) {
+            $telemetryProvider = 'StraightLine'
+        }
 
-                $splat = @{
-                    OriginLatitude       = $OriginLatitude
-                    OriginLongitude      = $OriginLongitude
-                    DestinationLatitude  = $DestinationLatitude
-                    DestinationLongitude = $DestinationLongitude
-                    TravelMode           = $TravelMode
-                    Server               = $osrmServer
-                }
-                ConvertFrom-GeoOsrmDistanceOutput -Resource (Find-GeoCodeDistanceOsrm @splat)
+        Send-THEvent -ModuleName "Geocoding" -EventName "Find-GeoCodeDistance" -PropertiesHash @{
+            Provider               = $telemetryProvider
+            TravelMode             = if ($isStraightLine) { $null } else { $TravelMode }
+            Unit                   = $Unit
+            IsStraightLineDistance = $isStraightLine
+            UsesTrafficAware       = if ($isStraightLine) { $false } else { $trafficAware }
+            UsesDepartureTime      = $PSBoundParameters.ContainsKey('DepartureTime')
+            UsesArrivalTime        = $PSBoundParameters.ContainsKey('ArrivalTime')
+        }
+
+        if ($isStraightLine) {
+            $result = Find-GeoCodeDistanceStraightLine -OriginLatitude $OriginLatitude -OriginLongitude $OriginLongitude -DestinationLatitude $DestinationLatitude -DestinationLongitude $DestinationLongitude
+        }
+        else {
+            # Validate logical constraints.
+            if ($TravelMode -eq 'Transit' -and $Provider -notin 'GoogleMaps', 'Google') {
+                throw "Transit mode is only supported by Google Maps."
+            }
+            if ($trafficAware -and $TravelMode -ne 'Driving') {
+                throw "TrafficAware is only supported for Driving mode."
+            }
+            if (($PSBoundParameters.ContainsKey('DepartureTime') -or $PSBoundParameters.ContainsKey('ArrivalTime')) -and $Provider -in 'OpenStreetMaps', 'OSM') {
+                throw "DepartureTime and ArrivalTime are not supported by Open Street Maps."
+            }
+            if ($PSBoundParameters.ContainsKey('ArrivalTime') -and $Provider -notin 'GoogleMaps', 'Google') {
+                throw "ArrivalTime is only supported by Google Maps."
             }
 
-            { $_ -in 'GoogleMaps', 'Google' } {
-                Write-Debug "[GoogleMaps] start distance processing"
-                Send-THEvent -ModuleName "Geocoding" -EventName "Find-GeoCodeDistance" -PropertiesHash @{ Provider = "Google" }
+            # Invoke the appropriate provider and get the normalised result.
+            $result = switch ($Provider) {
+                { $_ -in 'OpenStreetMaps', 'OSM' } {
+                    Write-Debug "[OpenStreetMaps] start distance processing"
 
-                $splat = @{
-                    OriginLatitude       = $OriginLatitude
-                    OriginLongitude      = $OriginLongitude
-                    DestinationLatitude  = $DestinationLatitude
-                    DestinationLongitude = $DestinationLongitude
-                    ApiKey               = $PSBoundParameters['Apikey']
-                    TravelMode           = $TravelMode
-                    TrafficAware         = $trafficAware
+                    $splat = @{
+                        OriginLatitude       = $OriginLatitude
+                        OriginLongitude      = $OriginLongitude
+                        DestinationLatitude  = $DestinationLatitude
+                        DestinationLongitude = $DestinationLongitude
+                        TravelMode           = $TravelMode
+                        Server               = $osrmServer
+                    }
+                    ConvertFrom-GeoOsrmDistanceOutput -Resource (Find-GeoCodeDistanceOsrm @splat)
                 }
-                if ($PSBoundParameters.ContainsKey('DepartureTime')) { $splat['DepartureTime'] = $DepartureTime }
-                if ($PSBoundParameters.ContainsKey('ArrivalTime'))   { $splat['ArrivalTime']   = $ArrivalTime   }
-                ConvertFrom-GeoGoogleMapsDistanceOutput -Resource (Find-GeoCodeDistanceGoogleMaps @splat)
-            }
 
-            { $_ -in 'AzureMaps', 'Azure' } {
-                Write-Debug "[AzureMaps] start distance processing"
-                Send-THEvent -ModuleName "Geocoding" -EventName "Find-GeoCodeDistance" -PropertiesHash @{ Provider = "Azure" }
+                { $_ -in 'GoogleMaps', 'Google' } {
+                    Write-Debug "[GoogleMaps] start distance processing"
 
-                $splat = @{
-                    OriginLatitude       = $OriginLatitude
-                    OriginLongitude      = $OriginLongitude
-                    DestinationLatitude  = $DestinationLatitude
-                    DestinationLongitude = $DestinationLongitude
-                    ApiKey               = $PSBoundParameters['Apikey']
-                    TravelMode           = $TravelMode
+                    $splat = @{
+                        OriginLatitude       = $OriginLatitude
+                        OriginLongitude      = $OriginLongitude
+                        DestinationLatitude  = $DestinationLatitude
+                        DestinationLongitude = $DestinationLongitude
+                        ApiKey               = $PSBoundParameters['Apikey']
+                        TravelMode           = $TravelMode
+                        TrafficAware         = $trafficAware
+                    }
+                    if ($PSBoundParameters.ContainsKey('DepartureTime')) { $splat['DepartureTime'] = $DepartureTime }
+                    if ($PSBoundParameters.ContainsKey('ArrivalTime')) { $splat['ArrivalTime'] = $ArrivalTime }
+                    ConvertFrom-GeoGoogleMapsDistanceOutput -Resource (Find-GeoCodeDistanceGoogleMaps @splat)
                 }
-                if ($PSBoundParameters.ContainsKey('DepartureTime')) { $splat['DepartureTime'] = $DepartureTime }
-                if ($PSBoundParameters.ContainsKey('ArrivalTime'))   { $splat['ArrivalTime']   = $ArrivalTime   }
-                ConvertFrom-GeoAzureMapsDistanceOutput -Resource (Find-GeoCodeDistanceAzureMaps @splat)
+
+                { $_ -in 'AzureMaps', 'Azure' } {
+                    Write-Debug "[AzureMaps] start distance processing"
+
+                    $splat = @{
+                        OriginLatitude       = $OriginLatitude
+                        OriginLongitude      = $OriginLongitude
+                        DestinationLatitude  = $DestinationLatitude
+                        DestinationLongitude = $DestinationLongitude
+                        ApiKey               = $PSBoundParameters['Apikey']
+                        TravelMode           = $TravelMode
+                    }
+                    if ($PSBoundParameters.ContainsKey('DepartureTime')) { $splat['DepartureTime'] = $DepartureTime }
+                    if ($PSBoundParameters.ContainsKey('ArrivalTime')) { $splat['ArrivalTime'] = $ArrivalTime }
+                    ConvertFrom-GeoAzureMapsDistanceOutput -Resource (Find-GeoCodeDistanceAzureMaps @splat)
+                }
             }
         }
 
@@ -265,7 +316,7 @@
         # available (or requested), so the property is omitted entirely to keep
         # the output clean.
         $distanceObj = if ($Unit -eq 'Imperial') {
-            [PSCustomObject]@{ "Miles" = [Math]::Round($result.Distance.Meters / 1609.344, 2) }
+            [PSCustomObject]@{ "Miles" = ConvertFrom-GeoDistanceToImperial -Meters $result.Distance.Meters }
         }
         else {
             $result.Distance

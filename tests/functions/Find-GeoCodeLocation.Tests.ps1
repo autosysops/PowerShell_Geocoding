@@ -178,4 +178,55 @@ Describe "Find-GeoCodeLocation - Microsoft Netherlands (Schiphol)" {
             $script:AzureResult.Boundingbox.'East Longitude' | Should -Not -BeNullOrEmpty -Because "a bounding box must have all four sides"
         }
     }
+
+    # -------------------------------------------------------------------------
+    # Telemetry
+    # -------------------------------------------------------------------------
+
+    Context "Telemetry" {
+
+        BeforeEach {
+            Mock Send-THEvent {} -ModuleName Geocoding
+            Mock Find-GeoCodeLocationNominatim { @([PSCustomObject]@{ }) } -ModuleName Geocoding
+            Mock ConvertFrom-GeoNominatimOutput {
+                [PSCustomObject]@{
+                    Coordinates = [PSCustomObject]@{ Latitude = 52.3; Longitude = 4.75 }
+                    Address     = [PSCustomObject]@{ Country = "Netherlands" }
+                    Boundingbox = [PSCustomObject]@{ }
+                }
+            } -ModuleName Geocoding
+        }
+
+        It "Sends non-PII telemetry for query lookups" {
+            $null = Find-GeoCodeLocation -Query "secret query text" -Provider OSM -Limit 1 -Language "nl-NL"
+
+            Should -Invoke Send-THEvent -ModuleName Geocoding -Times 1 -Exactly -ParameterFilter {
+                $EventName -eq "Find-GeoCodeLocation" -and
+                $PropertiesHash.Provider -eq "OSM" -and
+                $PropertiesHash.IsQueryLookup -eq $true -and
+                $PropertiesHash.IsReverseLookup -eq $false -and
+                $PropertiesHash.UsesLimit -eq $true -and
+                $PropertiesHash.UsesLanguage -eq $true -and
+                (-not $PropertiesHash.ContainsKey("Query")) -and
+                (-not $PropertiesHash.ContainsKey("Latitude")) -and
+                (-not $PropertiesHash.ContainsKey("Longitude"))
+            }
+        }
+
+        It "Sends non-PII telemetry for reverse lookups" {
+            $null = Find-GeoCodeLocation -Latitude 52.30 -Longitude 4.75 -Provider OSM
+
+            Should -Invoke Send-THEvent -ModuleName Geocoding -Times 1 -Exactly -ParameterFilter {
+                $EventName -eq "Find-GeoCodeLocation" -and
+                $PropertiesHash.Provider -eq "OSM" -and
+                $PropertiesHash.IsQueryLookup -eq $false -and
+                $PropertiesHash.IsReverseLookup -eq $true -and
+                $PropertiesHash.UsesLimit -eq $false -and
+                $PropertiesHash.UsesLanguage -eq $false -and
+                (-not $PropertiesHash.ContainsKey("Query")) -and
+                (-not $PropertiesHash.ContainsKey("Latitude")) -and
+                (-not $PropertiesHash.ContainsKey("Longitude"))
+            }
+        }
+    }
 }
